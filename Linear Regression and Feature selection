@@ -1,0 +1,48 @@
+train=read.csv("kaggletrain.csv")
+#1.Converting data columns into date format 
+train$last_scraped=as.Date(train$last_scraped,format="%Y-%m-%d")
+train$last_review=as.Date(train$last_review,format="%Y-%m-%d")
+train$host_since=as.Date(train$host_since,format="%Y-%m-%d")
+train$first_review=as.Date(train$first_review,format="%Y-%m-%d")
+train$calendar_last_scraped=as.Date(train$calendar_last_scraped,format="%Y-%m-%d")
+train$zipcode=as.numeric(train$zipcode)
+#2.Convert percentages columns from char to numeric 
+
+df=train[c(33,37,44,49,50,53,54,56,57,61,64,65,66,68,72,73,77,80:86,90,91,92,93,94,95,96)]
+df$cleaning_fee[is.na(df$cleaning_fee)]<-mean(df$cleaning_fee,na.rm=TRUE)
+df$security_deposit[is.na(df$security_deposit)]<-mean(df$security_deposit,na.rm=TRUE)
+df$zipcode[is.na(df$zipcode)]<-mean(df$zipcode,na.rm=TRUE)
+df$beds[is.na(df$beds)]<-2
+
+
+
+start_mod = lm(price~1,data=df)
+empty_mod = lm(price~1,data=df)
+full_mod = lm(price~.,data=df)
+forwardStepwise = step(start_mod,
+                       scope=list(upper=full_mod,lower=empty_mod),
+                       direction='forward')
+
+
+df1=df[c(1,2,3,5:12,14:18,20:24,26,29,31)]                      
+model=lm(price~.,data=df1)
+
+summary(model)
+pred = predict(model)
+sse = sum((pred - df1$price )^2)
+sst = sum((mean(df1$price)-df1$price)^2)
+r2 = 1 - sse/sst; r2
+
+test <- read.csv('kaggletest.csv')
+test$zipcode=as.numeric(test$zipcode)
+test1=test[c(33,37,44,50,53,54,56,57,63,64,67,71,72,76,79,81,82,83,84,85,90,93,95)]
+test1$zipcode[is.na(test1$zipcode)]<-mean(test1$zipcode,na.rm=TRUE)
+test1$cleaning_fee[is.na(test1$cleaning_fee)]<-mean(test1$cleaning_fee,na.rm=TRUE)
+test1$security_deposit[is.na(test1$security_deposit)]<-mean(test1$security_deposit,na.rm=TRUE)
+test1$beds[is.na(test1$beds)]<-2
+
+
+pred1=predict(model, newdata=test1)
+predicted_values=data.frame(test$id ,pred1)
+colnames(predicted_values)=c('id','price')
+write.csv(predicted_values,"/Users/vidishasuman/Desktop/data folder.csv", row.names = FALSE)
